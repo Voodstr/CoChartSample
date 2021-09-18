@@ -9,28 +9,28 @@ import androidx.compose.ui.geometry.Size
  *
  * @property xList
  * @property yList
- * @property xLimits
- * @property yLimits
+ * @property xMin
+ * @property xMax
+ * @property yMin
+ * @property yMax
  * @constructor Create empty Point list
  */
-
 data class PointList(
     private val xList: List<Float>,
     private val yList: List<Float>,
-    var xLimits: Limits,
-    var yLimits: Limits
+    var xMin: Float,
+    var xMax: Float,
+    var yMin: Float,
+    var yMax: Float
 ) {
 
 
     constructor(xList: List<Float>, yList: List<Float>) : this(
-        xList, yList, xLimits = Limits(
-            xList.minOrNull() ?: 0f,
-            xList.maxOrNull() ?: 100f
-        ),
-        yLimits = Limits(
-            yList.minOrNull() ?: 0f,
-            yList.maxOrNull() ?: 100f
-        )
+        xList, yList,
+        xMin = xList.minOrNull() ?: 0f,
+        xMax = xList.maxOrNull() ?: 100f,
+        yMin = yList.minOrNull() ?: 0f,
+        yMax = yList.maxOrNull() ?: 100f
     )
 
 
@@ -38,8 +38,8 @@ data class PointList(
         Point(x = xList[it], y = yList[it])
     }
 
-    fun offsetList(rectSize: Size) = MutableList(xList.size) {
-        pointsList[it].pointOffset(rectSize, xLimits, yLimits)
+    fun offsetList(rectSize: Size, xMin: Float,xMax: Float,yMin: Float,yMax: Float) = MutableList(xList.size) {
+        pointsList[it].pointOffset(rectSize, xMin, xMax, yMin, yMax)
     }
 
 
@@ -59,13 +59,15 @@ data class PointList(
          * Point offset
          * Calculate dot position on canvas
          * @param canvasSize
-         * @param xLimits x direction (Width) limits (min:Float,max:Float)
-         * @param yLimits y direction (Height) limits (min:Float,max:Float)
+         * @param xMin
+         * @param xMax
+         * @param yMin
+         * @param yMax
          */
-        fun pointOffset(canvasSize: Size, xLimits: Limits, yLimits: Limits) =
+        fun pointOffset(canvasSize: Size, xMin: Float,xMax: Float,yMin: Float,yMax: Float) =
             Offset(
-                x.div(xLimits.size()).times(canvasSize.width),
-                yLimits.max.minus(y).div(yLimits.size()).times(canvasSize.height)
+                x.div(xMax-xMin).times(canvasSize.width),
+                yMax.minus(y).div(yMax-yMin).times(canvasSize.height)
             )
     }
 

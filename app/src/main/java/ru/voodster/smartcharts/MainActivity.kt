@@ -14,6 +14,13 @@ import androidx.compose.ui.unit.sp
 import ru.voodster.smartcharts.ui.theme.SmartChartsTheme
 
 class MainActivity : ComponentActivity() {
+    val listSize = 48
+    val tempList = MutableList(listSize){
+        (10..20).random().toFloat()
+    }
+    val hoursList = MutableList(listSize){index->
+        index.times(0.5).toFloat()
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -30,13 +37,7 @@ class MainActivity : ComponentActivity() {
                                 .fillMaxHeight(),
                             contentAlignment = Alignment.Center
                         ) {
-                            val listSize = 48
-                            val tempList = MutableList(listSize){
-                                (10..20).random().toFloat()
-                            }
-                            val hoursList = MutableList(listSize){index->
-                                index.times(0.5).toFloat()
-                            }
+
                             PolygonChart(hoursList,tempList,
                                 modifier = Modifier
                                     .fillMaxSize()
