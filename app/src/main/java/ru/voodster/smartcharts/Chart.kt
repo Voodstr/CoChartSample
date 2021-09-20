@@ -1,8 +1,11 @@
 package ru.voodster.smartcharts
 
 import android.content.res.Configuration
+import android.graphics.Color
+import android.graphics.Paint
 import android.util.Log
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -10,31 +13,32 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Scaffold
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.PointMode
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ru.voodster.smartcharts.ui.theme.SmartChartsTheme
+import kotlin.math.nextDown
+import kotlin.math.roundToInt
 
 
 @Composable
-fun PolygonChartLabaled(
+fun PolygonChartLabeled(
     xList: List<Float>, yList: List<Float>,
     modifier: Modifier,
     labelFontSize: TextUnit
 ) {
-    val pointList = PointList(xList,yList)
+    val pointList = PointListMapper(xList, yList)
     //val scope = rememberCoroutineScope()
     val cornerOffset = 10.dp
     val surfaceColor = MaterialTheme.colors.surface
@@ -57,7 +61,7 @@ fun PolygonChartLabaled(
                     yList,
                     labelFontSize
                 )
-                 Drawing(pointList,modifier = modifier)
+                Drawing(pointList, modifier = modifier)
 
             }
             Bottom(
@@ -79,7 +83,7 @@ fun PolygonChart(
     labelFontSize: TextUnit
 ) {
     //val scope = rememberCoroutineScope()
-    val pointList = PointList(xList,yList)
+    val pointList = PointListMapper(xList, yList)
     val cornerOffset = 10.dp
     val surfaceColor = MaterialTheme.colors.surface
     Surface(
@@ -87,7 +91,7 @@ fun PolygonChart(
         color = surfaceColor,
         elevation = 8.dp
     ) {
-        Drawing(pointList,modifier = modifier)
+        Drawing(pointList, modifier = modifier)
     }
 }
 
@@ -110,47 +114,68 @@ fun Start(modifier: Modifier, yList: List<Float>, fontSize: TextUnit) {
 
 
 @Composable
-fun Drawing(pointList: PointList, modifier: Modifier) {
+fun Drawing(pointList: PointListMapper, modifier: Modifier) {
     val dotColor = MaterialTheme.colors.primary
-    var xMin = pointList.xMin
-    var xMax = pointList.xMax
-    var yMin = pointList.yMin
-    var yMax = pointList.yMax
+
+    var xMinLim by remember { mutableStateOf(pointList.xMinLim) }
+    var xMaxLim by remember { mutableStateOf(pointList.xMaxLim) }
+    var yMinLim by remember { mutableStateOf(pointList.yMinLim) }
+    var yMaxLim by remember { mutableStateOf(pointList.yMaxLim) }
+
     Box(
         modifier
-            .padding(10.dp)
-            .pointerInput(Unit) {
-                detectTransformGestures { _, _, zoom, _ ->
-                    xMax = xMax.times(10)
-                    Log.d("detectTransformGestures","zoom: $zoom")
-                }
-            }
-        ,
+            .padding(3.dp)
+            .pointerInput(Unit){
+
+                detectTapGestures(onDoubleTap = {
+                    xMaxLim = pointList.xMaxLim
+                    xMinLim = pointList.xMinLim
+                    yMaxLim = pointList.yMaxLim
+                    yMinLim = pointList.yMinLim
+                })
+
+
+            },
         contentAlignment = Alignment.Center,
         true
     ) {
+
         val lineColor = MaterialTheme.colors.onSurface
         Canvas(
             modifier = Modifier
                 .matchParentSize()
+                .pointerInput(Unit) {
+
+                    detectTransformGestures { center, pan, zoom, _ ->
+                        val xSize = xMaxLim - xMinLim
+                        val ySize = yMaxLim - yMinLim
+                        val xPoint = ((center.x / size.width) * xSize) + xMinLim
+                        val yPoint = (((size.height - center.y) / size.height) * ySize) + yMinLim
+                        xMaxLim =
+                            (xPoint + ((xMaxLim - xPoint).div(zoom))) - (pan.x / size.width) * xSize
+                        xMinLim =
+                            (xPoint - ((xPoint - xMinLim).div(zoom))) - (pan.x / size.width) * xSize
+                        yMaxLim =
+                            (yPoint + ((yMaxLim - yPoint).div(zoom))) + (pan.y / size.height) * ySize
+                        yMinLim =
+                            (yPoint - ((yPoint - yMinLim).div(zoom))) + (pan.y / size.height) * ySize
+                    }
+                }
         ) {
-                drawPoints(
+            drawPoints(
                 points = pointList
-                    .offsetList(size,
-                        xMin,
-                        xMax,
-                        yMin,
-                        yMax),
+                    .offsetList(
+                        size,
+                        xMinLim,
+                        xMaxLim,
+                        yMinLim,
+                        yMaxLim
+                    ),
                 pointMode = PointMode.Polygon,
                 lineColor,
                 strokeWidth = 5.0f
             )
-            pointList
-                .offsetList(size,
-                    xMin,
-                    xMax,
-                    yMin,
-                    yMax).forEach {
+            pointList.offsetList(size, xMinLim, xMaxLim, yMinLim, yMaxLim).forEach {
                 drawCircle(
                     Brush.linearGradient(
                         colors = listOf(dotColor, dotColor)
@@ -160,8 +185,39 @@ fun Drawing(pointList: PointList, modifier: Modifier) {
                     style = Stroke(width = size.width * 0.015f)
                 )
             }
+
+
+            pointList.xLabelsList(getTextPaint().textSize,0.01f,size,xMinLim, xMaxLim).forEach {
+                val strVal  = String.format("%.2f",it.x)
+                drawContext.canvas.nativeCanvas.drawText(
+                    "${strVal}",
+                    it.pointOffset(size,xMinLim, xMaxLim, yMinLim, yMaxLim).x,
+                    size.height+100f+getTextPaint().textSize,
+                    getTextPaint()
+                )
+            }
+            /*pointList.pointsOnCanvas(xMinLim, xMaxLim).filterIndexed{index,_ -> (index % (labelCounter+1))==0 }.forEach {
+                drawContext.canvas.nativeCanvas.drawText(
+                    "${it.x}",
+                    it.pointOffset(size, xMinLim, xMaxLim, yMinLim, yMaxLim).x,
+                    size.height+100f,
+                    getTextPaint()
+                )
+
+            }
+
+             */
         }
     }
+}
+
+
+fun getTextPaint(): Paint {
+    val paint = Paint()
+    paint.color = Color.BLACK
+    paint.textAlign = Paint.Align.CENTER
+    paint.textSize = 30f
+    return paint
 }
 
 

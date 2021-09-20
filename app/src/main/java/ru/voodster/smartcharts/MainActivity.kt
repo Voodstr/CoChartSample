@@ -11,16 +11,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import ru.voodster.smartcharts.PointListMapper.Companion.hoursList
+import ru.voodster.smartcharts.PointListMapper.Companion.tempList
 import ru.voodster.smartcharts.ui.theme.SmartChartsTheme
 
 class MainActivity : ComponentActivity() {
-    val listSize = 48
-    val tempList = MutableList(listSize){
-        (10..20).random().toFloat()
-    }
-    val hoursList = MutableList(listSize){index->
-        index.times(0.5).toFloat()
-    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
