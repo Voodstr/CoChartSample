@@ -5,14 +5,18 @@
  It contains "PointListMapper" which is responsible of converting values into points on canvas
  
  ### How to use it
+ 1. Create 2 list of values with same list.size
+ 2. Create PointListMapper class with given lists as parameters
+ 3. Pass it to PolygonChart widget
+ 4. There is 2 parameters: `label=true`  - if you want axis values, `grid=true` - if you grid lines
  
  ```kotlin
  //example lists
    val mockX = listOf(1.0f, 8.0f, 1.0f, 16.0f, 32.0f)
    val mockY = listOf(1.0f, 2.0f, 3.0f, 4.0f, 5.0f)
    
-   
    val pointList = PointListMapper(mockY, mockX)
+   
    PolygonChart(
            pointList,
            modifier = Modifier.size(300.dp),
@@ -25,13 +29,14 @@
    ```kotlin
  
  //example lists
-   val mockX = listOf(1.0f, 8.0f, 1.0f, 16.0f, 32.0f)
-   val mockY = listOf(1.0f, 2.0f, 3.0f, 4.0f, 5.0f)
+  val mockX = listOf(1.0f, 8.0f, 1.0f, 16.0f, 32.0f)
+  val mockY = listOf(1.0f, 2.0f, 3.0f, 4.0f, 5.0f)
    
- val xMinLim = 1f
- val xMaxLim = 10f
- val yMinLim = 1f
- val yMaxLim = 20f
+  //example limits 
+  val xMinLim = 1f
+  val xMaxLim = 10f
+  val yMinLim = 1f
+  val yMaxLim = 20f
    
    
    val pointList = PointListMapper(mockY, mockX,xMinLim,xMaxLim,yMinLim,yMaxLim)
@@ -42,4 +47,5 @@
            grid = true, labels = true
    ) 
  ```
+ 
  
