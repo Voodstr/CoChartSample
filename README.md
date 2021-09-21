@@ -66,7 +66,9 @@
    ) 
  ```
  
+ # Licence
  
+  ```
  
  Copyright 2021 Dmitriy Bychkov
 
@@ -84,3 +86,4 @@ limitations under the License.
  
 License applies to PointLisMapper class and PolygonChart
  
+  ```
