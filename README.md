@@ -1,10 +1,35 @@
 # SmartCharts - Jetpack Compose Charts widget
  
  Currently there's only PolygonChart - charts with line drawn from point to point
-  
- It contains "PointListMapper" which is responsible of converting values into points on canvas
  
- ### How to use it
+ ## Preview 
+  1. Charts can be any size or orientation
+
+
+
+
+
+  2. You can zoom
+
+
+
+
+
+  3. You can scroll in any direction
+
+
+
+
+
+  4.Double tap to resize to cover all Points 
+
+
+
+ ## How to use it
+ 
+  It contains "PointListMapper" which is responsible of converting values into points on canvas
+  
+  
  1. Create 2 list of values with same list.size
  2. Create PointListMapper class with given lists as parameters
  3. Pass it to PolygonChart widget
@@ -47,5 +72,6 @@
            grid = true, labels = true
    ) 
  ```
+ 
  
  
