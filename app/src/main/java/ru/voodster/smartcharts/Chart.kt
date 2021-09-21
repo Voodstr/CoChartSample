@@ -1,7 +1,6 @@
 package ru.voodster.smartcharts
 
 import android.content.res.Configuration
-import android.graphics.Color
 import android.graphics.Paint
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -26,9 +25,8 @@ import androidx.compose.ui.unit.dp
 import ru.voodster.smartcharts.ui.theme.SmartChartsTheme
 
 
-
 @Composable
-fun PolygonChart(
+fun PolygonChart( //Charts with line drawn from point to point
         pointList: PointListMapper,
         modifier: Modifier,
         grid: Boolean,
@@ -47,36 +45,15 @@ fun PolygonChart(
 }
 
 @Composable
-fun PolygonChart(
-        xList: List<Float>, yList: List<Float>,
-        modifier: Modifier,
-        grid: Boolean,
-        labels: Boolean
-) {
-    //val scope = rememberCoroutineScope()
-    val pointList = PointListMapper(xList, yList)
-    val cornerOffset = 10.dp
-    val surfaceColor = MaterialTheme.colors.surface
-    Surface(
-            modifier = modifier.clip(RoundedCornerShape(cornerOffset)),
-            color = surfaceColor,
-            elevation = 8.dp
-    ) {
-        Drawing(pointList, modifier = modifier, grid, labels)
-    }
-}
-
-@Composable
 fun Drawing(pointList: PointListMapper, modifier: Modifier,
             grid: Boolean, labels: Boolean) {
 
     val dotColor = MaterialTheme.colors.primaryVariant
 
-        val paint = Paint()
-        paint.color = MaterialTheme.colors.primaryVariant.hashCode()
-        paint.textAlign = Paint.Align.CENTER
-        paint.textSize = 30f
-
+    val paint = Paint()
+    paint.color = MaterialTheme.colors.primaryVariant.hashCode()
+    paint.textAlign = Paint.Align.CENTER
+    paint.textSize = 30f
 
     //remember state of limits causes canvas to redraw
     var xMinLim by remember { mutableStateOf(pointList.xMinLim) }
@@ -147,19 +124,17 @@ fun Drawing(pointList: PointListMapper, modifier: Modifier,
                         drawContext.canvas.nativeCanvas.drawText(strVal, paint.textSize, offset.y, paint)
                     }
                 }
-                pointList.xGridList(paint.textSize,size, xMinLim, xMaxLim).forEach {
+                pointList.xGridList(paint.textSize, size, xMinLim, xMaxLim).forEach {
                     val offset = it.pointOffset(size, xMinLim, xMaxLim, yMinLim, yMaxLim)
                     val strVal = String.format("%.2f", it.x)
                     if (grid) {
-                        drawLine(dotColor, Offset(offset.x, -200f), Offset(offset.x, size.height+200f))
+                        drawLine(dotColor, Offset(offset.x, -200f), Offset(offset.x, size.height + 200f))
                     }
                     if (labels) {
-                        drawContext.canvas.nativeCanvas.drawText(strVal, offset.x, size.height+100f+paint.textSize, paint)
+                        drawContext.canvas.nativeCanvas.drawText(strVal, offset.x, size.height + 100f + paint.textSize, paint)
                     }
                 }
             }
-
-
             drawPoints(
                     points = pointList.offsetList(size, xMinLim, xMaxLim, yMinLim, yMaxLim),
                     pointMode = PointMode.Polygon,
@@ -177,9 +152,6 @@ fun Drawing(pointList: PointListMapper, modifier: Modifier,
         }
     }
 }
-
-
-
 
 
 @Preview("Chart")
@@ -200,9 +172,9 @@ fun ChartPreview() {
             ) {
                 val mockX = listOf(1.0f, 8.0f, 1.0f, 16.0f, 32.0f)
                 val mockY = listOf(1.0f, 2.0f, 3.0f, 4.0f, 5.0f)
-                val pointList = PointListMapper(mockY,mockX)
+                val pointList = PointListMapper(mockY, mockX)
                 PolygonChart(
-                       pointList,
+                        pointList,
                         modifier = Modifier.size(300.dp),
                         grid = true, labels = true
                 )

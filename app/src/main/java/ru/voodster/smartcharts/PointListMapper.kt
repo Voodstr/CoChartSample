@@ -19,24 +19,24 @@ import kotlin.math.roundToInt
  * @constructor Create empty Point list
  */
 class PointListMapper(
-    private val xList: List<Float>,
-    private val yList: List<Float>,
-    var xMinLim: Float,
-    var xMaxLim: Float,
-    var yMinLim: Float,
-    var yMaxLim: Float
+        private val xList: List<Float>,
+        private val yList: List<Float>,
+        var xMinLim: Float,
+        var xMaxLim: Float,
+        var yMinLim: Float,
+        var yMaxLim: Float
 ) {
 
     constructor(xList: List<Float>, yList: List<Float>) : this(
-        xList, yList,
-        xMinLim = xList.minOrNull() ?: 0f,
-        xMaxLim = xList.maxOrNull() ?: 100f,
-        yMinLim = yList.minOrNull() ?: 0f,
-        yMaxLim = yList.maxOrNull() ?: 100f
+            xList, yList,
+            xMinLim = xList.minOrNull() ?: 0f,
+            xMaxLim = xList.maxOrNull() ?: 100f,
+            yMinLim = yList.minOrNull() ?: 0f,
+            yMaxLim = yList.maxOrNull() ?: 100f
     )
 
     init {
-        if (xList.size!=yList.size)throw IndexOutOfBoundsException("Lists (xList and yList) should be same size")
+        if (xList.size != yList.size) throw IndexOutOfBoundsException("Lists (xList and yList) should be same size")
     }
 
 
@@ -61,12 +61,13 @@ class PointListMapper(
          * @param yMin
          * @param yMax
          */
-        fun pointOffset(canvasSize: Size, xMin: Float,xMax: Float,yMin: Float,yMax: Float) =
+        fun pointOffset(canvasSize: Size, xMin: Float, xMax: Float, yMin: Float, yMax: Float) =
                 Offset(
-                        (x-xMin).div(xMax-xMin).times(canvasSize.width),
-                        (yMax-y).div(yMax-yMin).times(canvasSize.height)
+                        (x - xMin).div(xMax - xMin).times(canvasSize.width),
+                        (yMax - y).div(yMax - yMin).times(canvasSize.height)
                 )
     }
+
     /**
      * Points list
      *
@@ -80,8 +81,8 @@ class PointListMapper(
      * @param xMin
      * @param xMax
      */
-    private fun pointsOnCanvas(xMin: Float, xMax: Float)=
-        pointsList().filter { (xMax.plus((xMax-xMin).div(10))>it.x&&it.x>xMin.minus((xMax-xMin).div(10))) }
+    private fun pointsOnCanvas(xMin: Float, xMax: Float) =
+            pointsList().filter { (xMax.plus((xMax - xMin).div(10)) > it.x && it.x > xMin.minus((xMax - xMin).div(10))) }
 
     /**
      * Offset list for canvas to draw
@@ -111,15 +112,15 @@ class PointListMapper(
      * @param xMaxLim
      * @return
      */
-    fun xGridList(textSize:Float, rectSize: Size,
-                  xMinLim: Float, xMaxLim: Float):List<Point>{
+    fun xGridList(textSize: Float, rectSize: Size,
+                  xMinLim: Float, xMaxLim: Float): List<Point> {
         val precise = 0.001f
         val strLengthValue = "111.111".length
-        val textWidth =  (textSize*strLengthValue).roundToInt()
-        val maxOfLabels = (rectSize.width/textWidth).roundToInt()
-        val labelStep = ((xMaxLim-xMinLim)/maxOfLabels)
+        val textWidth = (textSize * strLengthValue).roundToInt()
+        val maxOfLabels = (rectSize.width / textWidth).roundToInt()
+        val labelStep = ((xMaxLim - xMinLim) / maxOfLabels)
 
-        return List(maxOfLabels){ Point((round(xMinLim,precise)+(round(labelStep/2,precise))+(round(labelStep,precise)*it)),1f) }
+        return List(maxOfLabels) { Point((round(xMinLim, precise) + (round(labelStep / 2, precise)) + (round(labelStep, precise) * it)), 1f) }
     }
 
     /**
@@ -132,10 +133,10 @@ class PointListMapper(
      * @param yMaxLim
      * @return
      */
-    fun yGridList(textSize:Float, rectSize: Size, yMinLim: Float, yMaxLim: Float):List<Point>{
-        val maxOfLabels = (rectSize.height/(textSize*3)).roundToInt()
-        val labelStep = ((yMaxLim-yMinLim)/maxOfLabels)
-        return List(maxOfLabels){Point(1f,yMinLim+(it*labelStep))}
+    fun yGridList(textSize: Float, rectSize: Size, yMinLim: Float, yMaxLim: Float): List<Point> {
+        val maxOfLabels = (rectSize.height / (textSize * 3)).roundToInt()
+        val labelStep = ((yMaxLim - yMinLim) / maxOfLabels)
+        return List(maxOfLabels) { Point(1f, yMinLim + (it * labelStep)) }
     }
 
     /**
@@ -144,41 +145,6 @@ class PointListMapper(
      * @param value
      * @param precise
      */
-    private fun round(value:Float, precise: Float)=value.minus(value%precise)
-
-    /*
-    /**
-     * Valuable x
-     *
-     * @param textSize
-     * @param rectSize
-     * @param xMinLim
-     * @param xMaxLim
-     * @return
-     */
-    fun valuableX(textSize:Float, rectSize: Size,xMinLim: Float, xMaxLim: Float):List<Point>{
-        val strLengthValue = "111.111".length
-        val textWidth =  (textSize*strLengthValue).roundToInt()
-        val maxOfLabels = (rectSize.width/textWidth).roundToInt()
-        val labelCounter = pointsOnCanvas(xMinLim, xMaxLim).size/maxOfLabels
-        return pointsOnCanvas(xMinLim, xMaxLim).filterIndexed{index, _ -> (index % (labelCounter+1))==0  }
-    }
-
-    /**
-     * Valuable y
-     *
-     * @param textSize
-     * @param rectSize
-     * @param xMinLim
-     * @param xMaxLim
-     * @return
-     */
-    fun valuableY(textSize:Float, rectSize: Size,xMinLim: Float, xMaxLim: Float):List<Point>{
-        val maxOfLabels = (rectSize.height/(textSize*3)).roundToInt()
-        val labelCounter = pointsOnCanvas(xMinLim, xMaxLim).size/maxOfLabels
-        return pointsOnCanvas(xMinLim, xMaxLim).filterIndexed{index, _ -> (index % (labelCounter+1))==0  }
-    }
-
-     */
+    private fun round(value: Float, precise: Float) = value.minus(value % precise)
 
 }
