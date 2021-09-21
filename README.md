@@ -21,7 +21,11 @@
 
 
 
-  4.Double tap to resize to cover all Points 
+  4. Double tap to resize to cover all Points 
+
+
+
+ 5. Long press to resize to default Limits
 
 
 
