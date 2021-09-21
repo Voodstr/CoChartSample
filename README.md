@@ -2,31 +2,20 @@
  
  Currently there's only PolygonChart - charts with line drawn from point to point
  
- ## Preview 
-  1. Charts can be any size or orientation
+ ## Preview
+  1. You can zoom and scroll
 
 
+  <img src="/zoom.gif" width="400"> <img src="/scroll.gif" width="400">
+  
+  
+  2. Double tap to resize to cover all Points, Long press to resize to default Limits
+ 
+ <img src="/dbltap.gif" width="400"> <img src="/longPress.gif" width="400">
 
-
-
-  2. You can zoom
-
-
-
-
-
-  3. You can scroll in any direction
-
-
-
-
-
-  4. Double tap to resize to cover all Points 
-
-
-
- 5. Long press to resize to default Limits
-
+  3. Charts can be any size or orientation
+ 
+ <img src="/resize.gif">
 
 
  ## How to use it
