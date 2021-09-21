@@ -6,12 +6,12 @@
   1. You can zoom and scroll
 
 
-  <img src="/zoom.gif" width="400"> <img src="/scroll.gif" width="400">
+  <img src="/zoom.gif" width="300"> <img src="/scroll.gif" width="300">
   
   
   2. Double tap to resize to cover all Points, Long press to resize to default Limits
  
- <img src="/dbltap.gif" width="400"> <img src="/longPress.gif" width="400">
+ <img src="/dbltap.gif" width="300"> <img src="/longPress.gif" width="300">
 
   3. Charts can be any size or orientation
  
