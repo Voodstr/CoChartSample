@@ -39,7 +39,7 @@ data class PointListMapper(
     companion object{
         private const val listSize = 50
         val tempList = List(listSize){
-            (10..20).random().toFloat()
+            (0..20).random().toFloat()
         }
         val hoursList = List(listSize){index->
             index.times(0.5).toFloat()
@@ -57,15 +57,36 @@ data class PointListMapper(
 
     fun xLabelsList(textSize:Float, precise:Float , rectSize: Size,
                     xMinLim: Float, xMaxLim: Float):List<Point>{
-        val strLengthValue = (xMinLim+precise).toString().length
-        val textWidth =  textSize*strLengthValue
-        val maxOfLabels = (rectSize.width/textWidth).roundToInt()+1
+        val strLengthValue = "111.111".length
+        val textWidth =  (textSize*strLengthValue).roundToInt()
+        val maxOfLabels = (rectSize.width/textWidth).roundToInt()
         val labelStep = ((xMaxLim-xMinLim)/maxOfLabels)
 
         return List(maxOfLabels){ Point((round(xMinLim,precise)+(round(labelStep/2,precise))+(round(labelStep,precise)*it)),1f) }
     }
 
+    fun yLabelsList(textSize:Float , rectSize: Size,yMinLim: Float,yMaxLim: Float):List<Point>{
+        val maxOfLabels = (rectSize.height/(textSize*3)).roundToInt()
+        val labelStep = ((yMaxLim-yMinLim)/maxOfLabels)
+        return List(maxOfLabels){Point(1f,yMinLim+(it*labelStep))}
+    }
+
     private fun round(value:Float, precise: Float)=value.minus(value%precise)
+
+    fun valuableX(textSize:Float, rectSize: Size,xMinLim: Float, xMaxLim: Float):List<Point>{
+        val strLengthValue = "111.111".length
+        val textWidth =  (textSize*strLengthValue).roundToInt()
+        val maxOfLabels = (rectSize.width/textWidth).roundToInt()
+        val labelCounter = pointsOnCanvas(xMinLim, xMaxLim).size/maxOfLabels
+        return pointsOnCanvas(xMinLim, xMaxLim).filterIndexed{index, _ -> (index % (labelCounter+1))==0  }
+    }
+
+    fun valuableY(textSize:Float, rectSize: Size,xMinLim: Float, xMaxLim: Float):List<Point>{
+        val maxOfLabels = (rectSize.height/(textSize*3)).roundToInt()
+        val labelCounter = pointsOnCanvas(xMinLim, xMaxLim).size/maxOfLabels
+        return pointsOnCanvas(xMinLim, xMaxLim).filterIndexed{index, _ -> (index % (labelCounter+1))==0  }
+    }
+
 
     fun offsetList(rectSize: Size,
                    xMinLim: Float, xMaxLim: Float,

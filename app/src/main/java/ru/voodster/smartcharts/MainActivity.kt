@@ -38,7 +38,7 @@ class MainActivity : ComponentActivity() {
                                     .fillMaxSize()
                                     .padding(10.dp)
                                     .requiredHeightIn(200.dp, 300.dp),
-                                labelFontSize = 10.sp
+                                    grid = true,labels = true,xValuable = false,yValuable = false
                             )
                         }
                     }

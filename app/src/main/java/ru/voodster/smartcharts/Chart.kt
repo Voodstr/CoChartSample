@@ -17,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.PointMode
@@ -32,55 +33,16 @@ import kotlin.math.nextDown
 import kotlin.math.roundToInt
 
 
-@Composable
-fun PolygonChartLabeled(
-    xList: List<Float>, yList: List<Float>,
-    modifier: Modifier,
-    labelFontSize: TextUnit
-) {
-    val pointList = PointListMapper(xList, yList)
-    //val scope = rememberCoroutineScope()
-    val cornerOffset = 10.dp
-    val surfaceColor = MaterialTheme.colors.surface
-    Surface(
-        modifier = modifier.clip(RoundedCornerShape(cornerOffset)),
-        color = surfaceColor,
-        elevation = 8.dp
-    ) {
-
-        Column(verticalArrangement = Arrangement.Center, modifier = Modifier.padding(5.dp)) {
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .weight(1.0f, fill = true), horizontalArrangement = Arrangement.Start
-            ) {
-                Start(
-                    Modifier
-                        .weight(0.1f, fill = true)
-                        .fillMaxHeight(),
-                    yList,
-                    labelFontSize
-                )
-                Drawing(pointList, modifier = modifier)
-
-            }
-            Bottom(
-                Modifier
-                    .fillMaxWidth()
-                    .weight(0.1f, fill = true),
-                xList,
-                labelFontSize
-            )
-        }
-    }
-}
 
 
 @Composable
 fun PolygonChart(
     xList: List<Float>, yList: List<Float>,
     modifier: Modifier,
-    labelFontSize: TextUnit
+    grid: Boolean,
+    labels:Boolean,
+    xValuable:Boolean,
+    yValuable:Boolean
 ) {
     //val scope = rememberCoroutineScope()
     val pointList = PointListMapper(xList, yList)
@@ -91,30 +53,14 @@ fun PolygonChart(
         color = surfaceColor,
         elevation = 8.dp
     ) {
-        Drawing(pointList, modifier = modifier)
-    }
-}
-
-
-@Composable
-fun Bottom(modifier: Modifier, xList: List<Float>, fontSize: TextUnit) {
-    Row(modifier, horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(text = xList.minOrNull().toString(), fontSize = fontSize)
-        Text(text = xList.maxOrNull().toString(), fontSize = fontSize)
+        Drawing(pointList, modifier = modifier,grid,labels,xValuable, yValuable)
     }
 }
 
 @Composable
-fun Start(modifier: Modifier, yList: List<Float>, fontSize: TextUnit) {
-    Column(modifier, verticalArrangement = Arrangement.SpaceBetween) {
-        Text(text = yList.maxOrNull().toString(), fontSize = fontSize)
-        Text(text = yList.minOrNull().toString(), fontSize = fontSize)
-    }
-}
-
-
-@Composable
-fun Drawing(pointList: PointListMapper, modifier: Modifier) {
+fun Drawing(pointList: PointListMapper, modifier: Modifier,
+            grid:Boolean,labels:Boolean,
+            xValuable:Boolean, yValuable:Boolean) {
     val dotColor = MaterialTheme.colors.primary
 
     var xMinLim by remember { mutableStateOf(pointList.xMinLim) }
@@ -162,6 +108,50 @@ fun Drawing(pointList: PointListMapper, modifier: Modifier) {
                     }
                 }
         ) {
+
+            if (grid||labels){
+                pointList.yLabelsList(getTextPaint().textSize,size,yMinLim, yMaxLim).forEach {
+                    val offset = it.pointOffset(size,xMinLim, xMaxLim, yMinLim, yMaxLim)
+                    val strVal  = String.format("%.2f",it.y)
+                    if(grid){
+                        drawLine(
+                                dotColor,
+                                Offset(-100f,offset.y),
+                                Offset(size.width+100f,offset.y)
+                        )}
+                    if(labels){
+                        drawContext.canvas.nativeCanvas.drawText(
+                                strVal,
+                                getTextPaint().textSize,
+                                offset.y,
+                                getTextPaint()
+                        )
+                    }
+
+                }
+
+                pointList.xLabelsList(getTextPaint().textSize,0.01f,size,xMinLim, xMaxLim).forEach {
+                    val offset = it.pointOffset(size,xMinLim, xMaxLim, yMinLim, yMaxLim)
+                    val strVal  = String.format("%.2f",it.x)
+                    if (grid){
+                        drawLine(
+                                dotColor,
+                                Offset(offset.x,-200f),
+                                Offset(offset.x,size.height+200f)
+                        )
+                    }
+                    if (labels){
+                        drawContext.canvas.nativeCanvas.drawText(
+                                strVal,
+                                offset.x,
+                                size.height+100f+getTextPaint().textSize,
+                                getTextPaint()
+                        )
+                    }
+                }
+            }
+
+
             drawPoints(
                 points = pointList
                     .offsetList(
@@ -186,27 +176,31 @@ fun Drawing(pointList: PointListMapper, modifier: Modifier) {
                 )
             }
 
-
-            pointList.xLabelsList(getTextPaint().textSize,0.01f,size,xMinLim, xMaxLim).forEach {
-                val strVal  = String.format("%.2f",it.x)
-                drawContext.canvas.nativeCanvas.drawText(
-                    "${strVal}",
-                    it.pointOffset(size,xMinLim, xMaxLim, yMinLim, yMaxLim).x,
-                    size.height+100f+getTextPaint().textSize,
-                    getTextPaint()
-                )
-            }
-            /*pointList.pointsOnCanvas(xMinLim, xMaxLim).filterIndexed{index,_ -> (index % (labelCounter+1))==0 }.forEach {
-                drawContext.canvas.nativeCanvas.drawText(
-                    "${it.x}",
-                    it.pointOffset(size, xMinLim, xMaxLim, yMinLim, yMaxLim).x,
-                    size.height+100f,
-                    getTextPaint()
-                )
-
+            if(xValuable){
+                pointList.valuableX(30f,size,xMinLim, xMaxLim).forEach {
+                    val offset = it.pointOffset(size, xMinLim, xMaxLim, yMinLim, yMaxLim)
+                    val strVal  = String.format("%.2f",it.x)
+                    drawContext.canvas.nativeCanvas.drawText(
+                            strVal,
+                            offset.x,
+                            size.height+130f,
+                            getTextPaint()
+                    )
+                }
             }
 
-             */
+            if(yValuable){
+                pointList.valuableY(30f,size,xMinLim, xMaxLim).forEach {
+                    val offset = it.pointOffset(size, xMinLim, xMaxLim, yMinLim, yMaxLim)
+                    val strVal  = String.format("%.2f",it.x)
+                    drawContext.canvas.nativeCanvas.drawText(
+                            strVal,
+                            getTextPaint().textSize,
+                            offset.y,
+                            getTextPaint()
+                    )
+                }
+            }
         }
     }
 }
@@ -242,7 +236,7 @@ fun ChartPreview() {
                 PolygonChart(
                     mockY, mockX,
                     modifier = Modifier.size(300.dp),
-                    labelFontSize = 10.sp
+                        grid = true, labels = true,xValuable = true,yValuable = false
                 )
             }
         }
