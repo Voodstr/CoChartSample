@@ -10,12 +10,21 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import ru.voodster.smartcharts.PointListMapper.Companion.hoursList
-import ru.voodster.smartcharts.PointListMapper.Companion.tempList
 import ru.voodster.smartcharts.ui.theme.SmartChartsTheme
 
 class MainActivity : ComponentActivity() {
+
+    companion object{
+        private const val listSize = 50
+        val tempList = List(listSize){
+            (0..20).random().toFloat()
+        }
+        val hoursList = List(listSize){index->
+            index.times(0.5).toFloat()
+        }
+    }
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -32,13 +41,13 @@ class MainActivity : ComponentActivity() {
                                 .fillMaxHeight(),
                             contentAlignment = Alignment.Center
                         ) {
-
-                            PolygonChart(hoursList,tempList,
+                            val pointList = PointListMapper(hoursList, tempList)
+                            PolygonChart(pointList,
                                 modifier = Modifier
                                     .fillMaxSize()
                                     .padding(10.dp)
                                     .requiredHeightIn(200.dp, 300.dp),
-                                    grid = true,labels = true,xValuable = false,yValuable = false
+                                    grid = true,labels = true
                             )
                         }
                     }
@@ -47,9 +56,3 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
-
-@Composable
-fun Greeting(name: String) {
-    Text(text = "Hello $name!")
-}
-
