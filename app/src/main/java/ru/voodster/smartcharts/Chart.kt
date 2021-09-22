@@ -1,7 +1,6 @@
 package ru.voodster.smartcharts
 
 import android.content.res.Configuration
-import android.graphics.Color
 import android.graphics.Paint
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -38,33 +37,14 @@ fun PolygonChart(
     val cornerOffset = 10.dp
     val surfaceColor = MaterialTheme.colors.surface
     Surface(
-            modifier = modifier.clip(RoundedCornerShape(cornerOffset)),
-            color = surfaceColor,
-            elevation = 8.dp
+        modifier = modifier.clip(RoundedCornerShape(cornerOffset)),
+        color = surfaceColor,
+        elevation = 8.dp
     ) {
         Drawing(pointList, modifier = modifier, grid, labels)
     }
 }
 
-@Composable
-fun PolygonChart(
-        xList: List<Float>, yList: List<Float>,
-        modifier: Modifier,
-        grid: Boolean,
-        labels: Boolean
-) {
-    //val scope = rememberCoroutineScope()
-    val pointList = PointListMapper(xList, yList)
-    val cornerOffset = 10.dp
-    val surfaceColor = MaterialTheme.colors.surface
-    Surface(
-            modifier = modifier.clip(RoundedCornerShape(cornerOffset)),
-            color = surfaceColor,
-            elevation = 8.dp
-    ) {
-        Drawing(pointList, modifier = modifier, grid, labels)
-    }
-}
 
 @Composable
 fun Drawing(pointList: PointListMapper, modifier: Modifier,
@@ -77,7 +57,6 @@ fun Drawing(pointList: PointListMapper, modifier: Modifier,
         paint.textAlign = Paint.Align.CENTER
         paint.textSize = 30f
 
-
     //remember state of limits causes canvas to redraw
     var xMinLim by remember { mutableStateOf(pointList.xMinLim) }
     var xMaxLim by remember { mutableStateOf(pointList.xMaxLim) }
@@ -85,34 +64,29 @@ fun Drawing(pointList: PointListMapper, modifier: Modifier,
     var yMaxLim by remember { mutableStateOf(pointList.yMaxLim) }
 
     Box(
-            modifier
-                    .padding(3.dp)
-                    .pointerInput(Unit) {
-                        detectTapGestures(onDoubleTap = {   //resize to cover all points
-                            xMaxLim = pointList
-                                    .pointsList()
-                                    .maxOfOrNull { it.x }
-                                    ?: pointList.xMaxLim
-                            xMinLim = pointList
-                                    .pointsList()
-                                    .minOfOrNull { it.x }
-                                    ?: pointList.xMinLim
-                            yMinLim = pointList
-                                    .pointsList()
-                                    .minOfOrNull { it.y }
-                                    ?: pointList.yMinLim
-                            yMaxLim = pointList
-                                    .pointsList()
-                                    .maxOfOrNull { it.y }
-                                    ?: pointList.yMaxLim
+        modifier
+            .padding(3.dp)
+            .pointerInput(Unit) {
+                detectTapGestures(onDoubleTap = {   //resize to cover all points
+                    xMaxLim = pointList
+                        .floatPointsList()
+                        .maxOfOrNull { it.x }
+                        ?: pointList.xMaxLim
+                    xMinLim = pointList
+                        .floatPointsList()
+                        .minOfOrNull { it.x }
+                        ?: pointList.xMinLim
+                    yMinLim = pointList
+                        .floatPointsList()
+                        .minOfOrNull { it.y }
+                        ?: pointList.yMinLim
+                    yMaxLim = pointList
+                        .floatPointsList()
+                        .maxOfOrNull { it.y }
+                        ?: pointList.yMaxLim
 
-                        }, onLongPress = { //resize to preset limits
-                            xMaxLim = pointList.xMaxLim
-                            xMinLim = pointList.xMinLim
-                            yMaxLim = pointList.yMaxLim
-                            yMinLim = pointList.yMinLim
-                        })
-                    },
+                })
+            },
             contentAlignment = Alignment.Center, true
     ) {
         val lineColor = MaterialTheme.colors.onSurface
@@ -196,17 +170,17 @@ fun ChartPreview() {
                     Modifier
                             .fillMaxWidth()
                             .fillMaxHeight(),
-                    contentAlignment = Alignment.Center
-            ) {
-                val mockX = listOf(1.0f, 8.0f, 1.0f, 16.0f, 32.0f)
-                val mockY = listOf(1.0f, 2.0f, 3.0f, 4.0f, 5.0f)
-                val pointList = PointListMapper(mockY,mockX)
-                PolygonChart(
-                       pointList,
+                    contentAlignment = Alignment.Center, content = {
+                    val mockX = arrayOf(1.0f, 8.0f, 1.0f, 16.0f, 32.0f)
+                    val mockY = arrayOf(1.0f, 2.0f, 3.0f, 4.0f, 5.0f)
+                    val pointList = PointListMapper(mockY,mockX)
+                    PolygonChart(
+                        pointList,
                         modifier = Modifier.size(300.dp),
                         grid = true, labels = true
-                )
-            }
+                    )
+                }
+            )
         }
     }
 }

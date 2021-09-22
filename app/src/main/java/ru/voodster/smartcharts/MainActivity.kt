@@ -16,10 +16,10 @@ class MainActivity : ComponentActivity() {
 
     companion object{
         private const val listSize = 50
-        val tempList = List(listSize){
+        val tempList = Array(listSize){
             (0..20).random().toFloat()
         }
-        val hoursList = List(listSize){index->
+        val hoursList = Array(listSize){index->
             index.times(0.5).toFloat()
         }
     }
