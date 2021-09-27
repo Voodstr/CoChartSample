@@ -16,7 +16,7 @@ import ru.voodster.smartcharts.ui.theme.SmartChartsTheme
 class MainActivity : ComponentActivity() {
 
     companion object{
-        private const val listSize = 1000
+        private const val listSize = 2000
         val tempList = List(listSize){
             (0..20).random().toFloat()
         }

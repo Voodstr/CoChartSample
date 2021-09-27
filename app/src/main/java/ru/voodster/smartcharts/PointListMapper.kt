@@ -101,17 +101,7 @@ class PointListMapper(
                 (x - xMin).div(xMax - xMin).times(canvasSize.width),
                 (yMax - y).div(yMax - yMin).times(canvasSize.height)
             )
-        suspend fun susPointOffset(canvasSize: Size, xMin: Float, xMax: Float, yMin: Float, yMax: Float) =
-            Offset(
-                (x - xMin).div(xMax - xMin).times(canvasSize.width),
-                (yMax - y).div(yMax - yMin).times(canvasSize.height)
-            )
-
     }
-
-    @Composable
-    fun livePointOffset(canvasSize: Size, xMin: Float, xMax: Float, yMin: Float, yMax: Float) =
-        offsetList(canvasSize, xMin, xMax, yMin, yMax)
 
     /**
      * Points list
@@ -143,6 +133,7 @@ class PointListMapper(
      */
 
 
+    @Composable
     fun offsetList(
         rectSize: Size,
         xMinLim: Float, xMaxLim: Float,
@@ -153,46 +144,6 @@ class PointListMapper(
             xMinLim, xMaxLim,
             yMinLim, yMaxLim
         )
-    }
-
-    suspend fun susOffsetList(
-        rectSize: Size,
-        xMinLim: Float, xMaxLim: Float,
-        yMinLim: Float, yMaxLim: Float
-    ) = List(pointsOnCanvas(xMinLim, xMaxLim).size) {
-        pointsOnCanvas(xMinLim, xMaxLim)[it].susPointOffset(
-            rectSize,
-            xMinLim, xMaxLim,
-            yMinLim, yMaxLim
-        )
-    }
-
-
-
-    fun isPointVisible(
-        startPoint: Offset, endPoint: Offset,
-    ) =
-        hypot((startPoint.x-endPoint.x),(startPoint.y-endPoint.y)).pow(0.5f) > 3f
-
-
-    fun visibleOffsets(
-        rectSize: Size,
-        xMinLim: Float, xMaxLim: Float,
-        yMinLim: Float, yMaxLim: Float):List<Offset> {
-        val visibleList: ArrayList<Offset> = arrayListOf()
-        var previous = Offset(1f, 1f)
-        offsetList(rectSize, xMinLim, xMaxLim, yMinLim, yMaxLim).forEachIndexed { index, offset ->
-            if (index == 0) {
-                previous = offset
-                visibleList.add(offset)
-            } else {
-                if (isPointVisible(previous, offset)) {
-                    previous = offset
-                    visibleList.add(offset)
-                }
-            }
-        }
-        return visibleList
     }
 
 
