@@ -146,7 +146,12 @@ class PointListMapper(
 
     @Composable
     fun canvasPoints(xMin: Float, xMax: Float,yMin: Float,yMax: Float) =
-        pointsList
+        pointsList.filter {
+            (
+                    xMax.plus((xMax - xMin).div(10)) > it.x
+                            &&
+                    it.x > xMin.minus((xMax - xMin).div(10)))
+        }
     /**
      * Offset list for canvas to draw
      *

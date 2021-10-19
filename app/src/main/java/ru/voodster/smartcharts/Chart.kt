@@ -88,52 +88,27 @@ fun Drawing(
     var canvasSize by remember { mutableStateOf(Size(10f, 10f)) }
 
     val scope = rememberCoroutineScope()
-    /*
-    val testList by remember { mutableStateOf(mutableListOf<Offset>()) }
-    val deferredList = mutableListOf<Deferred<Offset>>()
-    pointListMapper.canvasPoints(xMin = xMinLim, xMax = xMaxLim,yMinLim,yMaxLim).let {list->
-        deferredList.forEach { it.cancel() }
-        deferredList.clear()
-        list.forEach {point->
-            deferredList.add(scope.async {
-                point.pointOffset(canvasSize,xMinLim, xMaxLim,yMinLim,yMaxLim)
-            })
-        }
-    }
-
-    LaunchedEffect(key1 = deferredList){
-        testList.clear()
-        deferredList.forEach{
-            testList.add(it.await())
-        }
-    }
- */
-
     val testFromChunkList by remember { mutableStateOf(mutableListOf<Offset>()) }
     val chunkedList = mutableListOf<Deferred<List<Offset>>>()
 
-    pointListMapper.canvasPoints(xMin = xMinLim, xMax = xMaxLim,yMinLim,yMaxLim).let {list->
+    pointListMapper.canvasPoints(xMinLim, xMaxLim,yMinLim,yMaxLim).let {list->
         chunkedList.forEach { it.cancel() }
         chunkedList.clear()
-        list.chunked(500).forEach { chunk->
-            /*
+        list.chunked(100).forEach { chunk->
             val first = chunk.first().pointOffset(canvasSize,xMinLim, xMaxLim,yMinLim,yMaxLim)
             val last = chunk.last().pointOffset(canvasSize,xMinLim, xMaxLim,yMinLim,yMaxLim)
             val dx = last.x-first.x
             val dy = last.y-first.y
             val dist = hypot(dx,dy)
-            if (dist>10f){
+            if (dist>chunk.size/5){
+                chunkedList.add(scope.async {
+                    List(chunk.size){
+                        chunk[it].pointOffset(canvasSize,xMinLim, xMaxLim,yMinLim,yMaxLim)
+                    }
+                })
             }
-             */
-            chunkedList.add(scope.async {
-                List(chunk.size){
-                    chunk[it].pointOffset(canvasSize,xMinLim, xMaxLim,yMinLim,yMaxLim)
-                }
-            })
         }
     }
-
-
 
     LaunchedEffect(key1 = chunkedList){
         testFromChunkList.clear()
