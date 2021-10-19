@@ -42,7 +42,11 @@ import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import ru.voodster.smartcharts.ui.theme.SmartChartsTheme
+import kotlin.math.hypot
 
 
 @Composable
@@ -76,21 +80,69 @@ fun Drawing(
     paint.color = MaterialTheme.colors.primaryVariant.hashCode()
     paint.textAlign = Paint.Align.CENTER
     paint.textSize = 30f
-
     //remember state of limits causes to calculate new offsetList
-    var xMinLim by remember { mutableStateOf(pointListMapper.xMinLim) }
-    var xMaxLim by remember { mutableStateOf(pointListMapper.xMaxLim) }
-    var yMinLim by remember { mutableStateOf(pointListMapper.yMinLim) }
-    var yMaxLim by remember { mutableStateOf(pointListMapper.yMaxLim) }
+    var xMinLim by remember { mutableStateOf(0f) }
+    var xMaxLim by remember { mutableStateOf(10f) }
+    var yMinLim by remember { mutableStateOf(0f) }
+    var yMaxLim by remember { mutableStateOf(10f) }
     var canvasSize by remember { mutableStateOf(Size(10f, 10f)) }
 
-    val pointList = pointListMapper.offsetList(
-        rectSize = canvasSize,
-        xMinLim = xMinLim,
-        xMaxLim = xMaxLim,
-        yMinLim = yMinLim,
-        yMaxLim = yMaxLim
-    )
+    val scope = rememberCoroutineScope()
+    /*
+    val testList by remember { mutableStateOf(mutableListOf<Offset>()) }
+    val deferredList = mutableListOf<Deferred<Offset>>()
+    pointListMapper.canvasPoints(xMin = xMinLim, xMax = xMaxLim,yMinLim,yMaxLim).let {list->
+        deferredList.forEach { it.cancel() }
+        deferredList.clear()
+        list.forEach {point->
+            deferredList.add(scope.async {
+                point.pointOffset(canvasSize,xMinLim, xMaxLim,yMinLim,yMaxLim)
+            })
+        }
+    }
+
+    LaunchedEffect(key1 = deferredList){
+        testList.clear()
+        deferredList.forEach{
+            testList.add(it.await())
+        }
+    }
+ */
+
+    val testFromChunkList by remember { mutableStateOf(mutableListOf<Offset>()) }
+    val chunkedList = mutableListOf<Deferred<List<Offset>>>()
+
+    pointListMapper.canvasPoints(xMin = xMinLim, xMax = xMaxLim,yMinLim,yMaxLim).let {list->
+        chunkedList.forEach { it.cancel() }
+        chunkedList.clear()
+        list.chunked(500).forEach { chunk->
+            /*
+            val first = chunk.first().pointOffset(canvasSize,xMinLim, xMaxLim,yMinLim,yMaxLim)
+            val last = chunk.last().pointOffset(canvasSize,xMinLim, xMaxLim,yMinLim,yMaxLim)
+            val dx = last.x-first.x
+            val dy = last.y-first.y
+            val dist = hypot(dx,dy)
+            if (dist>10f){
+            }
+             */
+            chunkedList.add(scope.async {
+                List(chunk.size){
+                    chunk[it].pointOffset(canvasSize,xMinLim, xMaxLim,yMinLim,yMaxLim)
+                }
+            })
+        }
+    }
+
+
+
+    LaunchedEffect(key1 = chunkedList){
+        testFromChunkList.clear()
+        chunkedList.forEach{
+            it.await().forEach {offset->
+                testFromChunkList.add(offset)
+            }
+        }
+    }
 
     Box(
         modifier
@@ -99,19 +151,19 @@ fun Drawing(
                     xMaxLim = pointListMapper
                         .pointsList
                         .maxOfOrNull { it.x }
-                        ?: pointListMapper.xMaxLim
+                        ?: 10f
                     xMinLim = pointListMapper
                         .pointsList
                         .minOfOrNull { it.x }
-                        ?: pointListMapper.xMinLim
+                        ?: 0f
                     yMinLim = pointListMapper
                         .pointsList
                         .minOfOrNull { it.y }
-                        ?: pointListMapper.yMinLim
+                        ?: 0f
                     yMaxLim = pointListMapper
                         .pointsList
                         .maxOfOrNull { it.y }
-                        ?: pointListMapper.yMaxLim
+                        ?: 10f
 
                 })
             },
@@ -185,13 +237,13 @@ fun Drawing(
             }
 
             drawPoints(
-                points = pointList,
+                points = testFromChunkList,
                 pointMode = PointMode.Polygon,
                 lineColor,
                 strokeWidth = 5.0f
             )
             drawPoints(
-                points = pointList,
+                points = testFromChunkList,
                 pointMode = PointMode.Points,
                 dotColor,
                 strokeWidth = 10.0f
@@ -218,8 +270,8 @@ fun ChartPreview() {
                     .fillMaxHeight(),
                 contentAlignment = Alignment.Center
             ) {
-                val mockX = listOf(1.0f, 8.0f, 1.0f, 16.0f, 32.0f)
-                val mockY = listOf(1.0f, 2.0f, 3.0f, 4.0f, 5.0f)
+                val mockX = arrayOf(1.0f, 8.0f, 1.0f, 16.0f, 32.0f)
+                val mockY = arrayOf(1.0f, 2.0f, 3.0f, 4.0f, 5.0f)
                 val pointList = PointListMapper(mockY, mockX)
                 PolygonChart(
                     pointList,

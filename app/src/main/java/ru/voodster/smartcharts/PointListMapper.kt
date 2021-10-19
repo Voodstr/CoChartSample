@@ -19,7 +19,9 @@ License applies to PointLisMapper class and PolygonChart
 package ru.voodster.smartcharts
 
 import android.annotation.SuppressLint
+import android.util.Log
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -37,41 +39,62 @@ import kotlin.math.roundToInt
  *
  * @property xList
  * @property yList
- * @property xMinLim
- * @property xMaxLim
- * @property yMinLim
- * @property yMaxLim
  * @constructor Create empty Point list
  */
 class PointListMapper(
-    private val xList: List<Float>,
-    private val yList: List<Float>,
-    var xMinLim: Float,
-    var xMaxLim: Float,
-    var yMinLim: Float,
-    var yMaxLim: Float
+    private val xList: Array<Float>,
+    private val yList: Array<Float>,
+    private val dateList: Array<Long>,
+    private val multiList: Array<Array<Float>>,
+    private val mode:ListMode
 ) {
 
-    constructor(xList: List<Float>, yList: List<Float>) : this(
-        xList, yList,
-        xMinLim = xList.minOrNull() ?: 0f,
-        xMaxLim = xList.maxOrNull() ?: 10f,
-        yMinLim = yList.minOrNull() ?: 0f,
-        yMaxLim = yList.maxOrNull() ?: 10f
-    ){
-        if (yMinLim==yMaxLim){
-            yMinLim-=yMinLim.div(2)
-            yMaxLim+=yMaxLim.div(2)
-        }
-        if (xMinLim==xMaxLim){
-            xMinLim-=xMinLim.div(2)
-            xMaxLim+=xMaxLim.div(2)
-        }
-        //
+
+    enum class Axis{
+        Vertical,
+        Horizontal
     }
 
+    enum class ListMode {
+        Float,
+        TimeSeries,
+        MultiSeries
+    }
+
+    constructor(xList: Array<Float>, yList: Array<Float>) : this(
+        xList, yList, arrayOf(), arrayOf(),ListMode.Float
+    )
+
+    constructor(xList: Array<Float>, dateList: Array<Long>) : this(
+        xList, arrayOf(), dateList, arrayOf(),ListMode.TimeSeries
+    )
+    constructor(multiList: Array<Array<Float>>, dateList: Array<Long>) : this(
+        arrayOf(), arrayOf(), dateList, multiList,ListMode.MultiSeries
+    )
+
+
+    private fun checkErrors(){
+        when(mode){
+            ListMode.Float->{
+                if(xList.size!=yList.size) throw IndexOutOfBoundsException("Arrays should be same size")
+            }
+            ListMode.TimeSeries->{
+                if(xList.size!=dateList.size) throw IndexOutOfBoundsException("Arrays should be same size")
+            }
+            ListMode.MultiSeries->{
+                multiList.forEach {
+                    if (it.size!=dateList.size)throw IndexOutOfBoundsException("Arrays should be same size")
+                }
+            }
+        }
+    }
+
+
+    /*
+
+     */
     init {
-        if (xList.size != yList.size) throw IndexOutOfBoundsException("Lists (xList and yList) should be same size")
+        checkErrors()
     }
 
 
@@ -116,11 +139,14 @@ class PointListMapper(
      * @param xMin
      * @param xMax
      */
-    private fun pointsOnCanvas(xMin: Float, xMax: Float) =
+    fun pointsOnCanvas(xMin: Float, xMax: Float) =
         pointsList.filter {
             (xMax.plus((xMax - xMin).div(10)) > it.x && it.x > xMin.minus((xMax - xMin).div(10)))
         }
 
+    @Composable
+    fun canvasPoints(xMin: Float, xMax: Float,yMin: Float,yMax: Float) =
+        pointsList
     /**
      * Offset list for canvas to draw
      *
@@ -144,6 +170,45 @@ class PointListMapper(
             xMinLim, xMaxLim,
             yMinLim, yMaxLim
         )
+    }
+
+
+    private suspend fun offsetSequence(rectSize: Size,
+                                       xMinLim: Float, xMaxLim: Float,
+                                       yMinLim: Float, yMaxLim: Float):Sequence<Offset> = sequence{
+        pointsOnCanvas(xMinLim,xMaxLim).forEach {
+            yield(it.pointOffset(rectSize,xMinLim, xMaxLim,yMinLim,yMaxLim))
+        }
+    }
+
+    @Composable
+    fun testOffsetList(rectSize: Size,
+                               xMinLim: Float, xMaxLim: Float,
+                               yMinLim: Float, yMaxLim: Float):List<Offset>{
+        val list = mutableListOf<Offset>()
+        val curList = pointsOnCanvas(xMinLim,xMaxLim)
+        val deferredList = mutableListOf<Deferred<Offset>>()
+        val scope = rememberCoroutineScope()
+        curList.forEach { point->
+            deferredList.add(scope.async {
+                point.pointOffset(rectSize,xMinLim, xMaxLim,yMinLim,yMaxLim)
+            })
+        }
+        deferredList.forEach {
+            scope.launch {
+                list.add(it.await())
+            }
+        }
+        Log.d("testOffsetList",list.toString())
+        return list
+    }
+
+    fun deferedList(scope: CoroutineScope, rectSize: Size,
+                    xMinLim: Float, xMaxLim: Float,
+                    yMinLim: Float, yMaxLim: Float) :Deferred<List<Offset>> {
+        return scope.async{
+            List(pointsOnCanvas(xMinLim,xMaxLim).size){ Offset(0f,0f)}
+        }
     }
 
 

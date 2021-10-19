@@ -5,9 +5,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.Scaffold
-import androidx.compose.material.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -16,14 +13,16 @@ import ru.voodster.smartcharts.ui.theme.SmartChartsTheme
 class MainActivity : ComponentActivity() {
 
     companion object{
-        private const val listSize = 2000
-        val tempList = List(listSize){
+        private const val listSize = 50000
+        val tempList = Array(listSize){
             (0..20).random().toFloat()
         }
-        val hoursList = List(listSize){index->
+        val hoursList = Array(listSize){index->
             index.times(0.5).toFloat()
         }
     }
+
+
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
