@@ -1,5 +1,6 @@
 package ru.voodster.smartcharts
 
+import AbstractPointMapper
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -13,7 +14,7 @@ import ru.voodster.smartcharts.ui.theme.SmartChartsTheme
 class MainActivity : ComponentActivity() {
 
     companion object{
-        private const val listSize = 10000
+        private const val listSize = 100
         val tempList = Array(listSize){
             (0..20).random().toFloat()
         }
@@ -41,13 +42,13 @@ class MainActivity : ComponentActivity() {
                                 .fillMaxHeight(),
                             contentAlignment = Alignment.Center
                         ) {
-                            val pointList = PointListMapper(hoursList, tempList)
+                            val pointList = AbstractPointMapper(hoursList, tempList)
                             PolygonChart(pointList,
                                 modifier = Modifier
                                     .fillMaxSize()
                                     .padding(10.dp)
                                     .requiredHeightIn(200.dp, 300.dp),
-                                    grid = true,labels = true
+                                    grid = true, labels = true,40f
                             )
                         }
                     }
