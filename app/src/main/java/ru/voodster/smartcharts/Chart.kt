@@ -23,13 +23,13 @@ import android.content.res.Configuration
 import android.graphics.Paint
 import android.util.Log
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.gestures.*
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Scaffold
 import androidx.compose.material.Surface
-import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,19 +47,112 @@ import ru.voodster.smartcharts.ui.theme.SmartChartsTheme
 import kotlin.math.hypot
 import kotlin.math.roundToInt
 
-
 @Composable
-fun PolygonChart(
-    pointListMapper: AbstractPointMapper, modifier: Modifier,
-    grid: Boolean, labels: Boolean, textSize:Float
+fun Drawing(
+    points: ArrayList<Offset>, modifier: Modifier,
+    xMinLim: Float, xMaxLim: Float, yMinLim: Float, yMaxLim: Float,
+    gridX: Boolean, gridY: Boolean,
+    pointListMapper: AbstractPointMapper,
+    textSize:Float
 ) {
-    val cornerOffset = 10.dp
-    val surfaceColor = MaterialTheme.colors.surface
+    Log.d("Drawing", "Drawing start")
+    val list by remember { mutableStateOf(points) }
+    val lineColor = MaterialTheme.colors.onSurface
     val dotColor = MaterialTheme.colors.primaryVariant
     val paint = Paint()
     paint.color = MaterialTheme.colors.primaryVariant.hashCode()
     paint.textAlign = Paint.Align.CENTER
     paint.textSize = textSize
+
+    var canvasSize by remember { mutableStateOf(Size(10f, 10f)) }
+    var xLabelsCount = (canvasSize.width / ("111.111".length * paint.textSize)).roundToInt()
+    var yLabelsCount = (canvasSize.height / (3 * paint.textSize).toInt()).roundToInt()
+
+    Box(
+        modifier.fillMaxSize(), contentAlignment = Alignment.Center, true
+    ) {
+        Canvas(modifier = modifier.matchParentSize()) {
+            Log.d("Drawing", "Canvas start")
+            if (canvasSize != size) {
+                canvasSize = size
+                xLabelsCount =
+                    (canvasSize.width / ("111.111".length * paint.textSize)).roundToInt()
+                yLabelsCount = (canvasSize.height / (3 * paint.textSize).toInt()).roundToInt()
+                pointListMapper.canvasSize = size
+            }
+
+            if (gridY){
+                pointListMapper.gridList(
+                    yLabelsCount,
+                    yMinLim,
+                    yMaxLim,
+                    AbstractPointMapper.Axis.Vertical
+                ).forEach {
+                    val offset = it.pointOffset(size, xMinLim, xMaxLim, yMinLim, yMaxLim)
+                    val strVal = String.format("%.2f", it.y)
+                    drawLine(
+                        dotColor,
+                        Offset(-100f, offset.y),
+                        Offset(size.width + 100f, offset.y)
+                    )
+                    drawContext.canvas.nativeCanvas.drawText(
+                        strVal,
+                        paint.textSize,
+                        offset.y,
+                        paint
+                    )
+                }
+            }
+
+            if (gridX){
+                pointListMapper.gridList(
+                    xLabelsCount,
+                    xMinLim,
+                    xMaxLim,
+                    AbstractPointMapper.Axis.Horizontal
+                ).forEach {
+                    val offset = it.pointOffset(size, xMinLim, xMaxLim, yMinLim, yMaxLim)
+                    val strVal = String.format("%.2f", it.x)
+                    drawLine(
+                        dotColor,
+                        Offset(offset.x, -100f),
+                        Offset(offset.x, size.height)
+                    )
+                    drawContext.canvas.nativeCanvas.drawText(
+                        strVal,
+                        offset.x,
+                        size.height - paint.textSize / 2,
+                        paint
+                    )
+                }
+            }
+
+            drawPoints(
+                points = list,
+                pointMode = PointMode.Polygon,
+                lineColor,
+                strokeWidth = 5.0f
+            )
+            drawPoints(
+                points = list,
+                pointMode = PointMode.Points,
+                dotColor,
+                strokeWidth = 10.0f
+            )
+            Log.d("Drawing", "Canvas end")
+        }
+    }
+    Log.d("Drawing", "Drawing end")
+}
+
+
+@Composable
+fun PolygonChart(
+    pointListMapper: AbstractPointMapper, modifier: Modifier,
+    grid: Boolean,  textSize: Float
+) {
+    val cornerOffset = 10.dp
+    val surfaceColor = MaterialTheme.colors.surface
 
     //remember state of limits causes to calculate new offsetList
     var xMinLim by remember { mutableStateOf(0f) }
@@ -67,81 +160,51 @@ fun PolygonChart(
     var yMinLim by remember { mutableStateOf(0f) }
     var yMaxLim by remember { mutableStateOf(10f) }
 
-    var draw by remember {
-        mutableStateOf(false)
-    }
-
-    var canvasSize by remember { mutableStateOf(Size(10f, 10f)) }
-    var xLabelsCount=(canvasSize.width/("111.111".length*paint.textSize)).roundToInt()
-    var yLabelsCount=(canvasSize.height/(3*paint.textSize).toInt()).roundToInt()
 
     val scope = rememberCoroutineScope()
-    val offsetList by remember { mutableStateOf(mutableListOf<Offset>()) }
     val chunkedList = mutableListOf<Deferred<List<Offset>>>()
 
 
-
-//*
-        pointListMapper.canvasPoints(xMinLim, xMaxLim,yMinLim,yMaxLim,draw).let {list->
-            chunkedList.forEach { it.cancel() }
-            chunkedList.clear()
-            list.chunked(100).forEach { chunk->
-                val first = chunk.first().pointOffset(canvasSize,xMinLim, xMaxLim,yMinLim,yMaxLim)
-                val last = chunk.last().pointOffset(canvasSize,xMinLim, xMaxLim,yMinLim,yMaxLim)
-                val dx = last.x-first.x
-                val dy = last.y-first.y
-                val dist = hypot(dx,dy)
-                if (dist>chunk.size/5){
-                    chunkedList.add(scope.async {
-                        Log.d("CHART","scope start")
-                        List(chunk.size){
-                            chunk[it].pointOffset(canvasSize,xMinLim, xMaxLim,yMinLim,yMaxLim)
-                        }
-                    })
-                }else {
-                    chunkedList.add(scope.async {
-                        listOf(first,last)
-                    })
-                }
+    val offsetList by remember { mutableStateOf(ArrayList<Offset>()) }
+    LaunchedEffect(key1 = chunkedList) {
+        Log.d("CHART", "LaunchedEffect start")
+        offsetList.clear()
+        chunkedList.forEach {
+            Log.d("CHART", "offset add")
+            it.await().forEach { offset ->
+                offsetList.add(offset)
             }
         }
- //*/
+        Log.d("CHART", "LaunchedEffect end")
+    }
+
+    pointListMapper.canvasPoints(xMinLim, xMaxLim, yMinLim, yMaxLim).let { list ->
+        chunkedList.forEach { it.cancel() }
+        chunkedList.clear()
+        list.chunked(100).forEach { chunk ->
+            val first = chunk.first().pointOffset(pointListMapper.canvasSize, xMinLim, xMaxLim, yMinLim, yMaxLim)
+            val last = chunk.last().pointOffset(pointListMapper.canvasSize, xMinLim, xMaxLim, yMinLim, yMaxLim)
+            val dx = last.x - first.x
+            val dy = last.y - first.y
+            val dist = hypot(dx, dy)
+            if (dist > chunk.size / 5) {
+                chunkedList.add(scope.async {
+                    Log.d("CHART", "scope start")
+                    List(chunk.size) {
+                        chunk[it].pointOffset(pointListMapper.canvasSize, xMinLim, xMaxLim, yMinLim, yMaxLim)
+                    }
+                })
+            } else {
+                chunkedList.add(scope.async {
+                    listOf(first, last)
+                })
+            }
+        }
+    }
 
     Surface(
-        modifier = modifier.clip(RoundedCornerShape(cornerOffset)),
-        color = surfaceColor,
-        elevation = 8.dp
-    ) {
-    Box(
-        modifier
-            .fillMaxSize()
-            .pointerInput(Unit) {
-                detectTapGestures(onDoubleTap = {   //resize to cover all points
-                    xMaxLim = pointListMapper.pointsList.maxOfOrNull { it.x }
-                        ?: 10f
-                    xMinLim = pointListMapper.pointsList.minOfOrNull { it.x }
-                        ?: 0f
-                    yMinLim = pointListMapper.pointsList.minOfOrNull { it.y }
-                        ?: 0f
-                    yMaxLim = pointListMapper.pointsList.maxOfOrNull { it.y }
-                        ?: 10f
-                })
-            },
-        contentAlignment = Alignment.Center, true
-    ) {
-        LaunchedEffect(key1 = chunkedList){
-            Log.d("CHART","LaunchedEffect start")
-            offsetList.clear()
-            chunkedList.forEach{
-                it.await().forEach {offset->
-                    offsetList.add(offset)
-                }
-            }
-            Log.d("CHART","LaunchedEffect end")
-        }
-        val lineColor = MaterialTheme.colors.onSurface
-        Canvas(modifier = Modifier
-            .matchParentSize()
+        modifier = modifier
+            .clip(RoundedCornerShape(cornerOffset))
             .pointerInput(Unit) {
                 detectTransformGestures { center, pan, zoom, _ ->
                     val xSize = xMaxLim - xMinLim
@@ -158,70 +221,42 @@ fun PolygonChart(
                     yMinLim =
                         (yPoint - ((yPoint - yMinLim).div(zoom))) + (pan.y / size.height) * ySize
                 }
-            }) {
-            Log.d("CHART","canvas start")
-            if (canvasSize != size) {
-                canvasSize = size
-                xLabelsCount=(canvasSize.width/("111.111".length*paint.textSize)).roundToInt()
-                yLabelsCount=(canvasSize.height/(3*paint.textSize).toInt()).roundToInt()
-            }
-            drawPoints(
-                points = offsetList,
-                pointMode = PointMode.Polygon,
-                lineColor,
-                strokeWidth = 5.0f
-            )
-            drawPoints(
-                points = offsetList,
-                pointMode = PointMode.Points,
-                dotColor,
-                strokeWidth = 10.0f
-            )
-            if (grid || labels) {
-                pointListMapper.gridList(yLabelsCount,yMinLim,yMaxLim,AbstractPointMapper.Axis.Vertical).forEach {
-                    val offset = it.pointOffset(size, xMinLim, xMaxLim, yMinLim, yMaxLim)
-                    val strVal = String.format("%.2f", it.y)
-                    if (grid) {
-                        drawLine(
-                            dotColor,
-                            Offset(-100f, offset.y),
-                            Offset(size.width + 100f, offset.y)
-                        )
-                    }
-                    if (labels) {
-                        drawContext.canvas.nativeCanvas.drawText(
-                            strVal,
-                            paint.textSize,
-                            offset.y,
-                            paint
-                        )
-                    }
-                }
-                pointListMapper.gridList(xLabelsCount,xMinLim,xMaxLim,AbstractPointMapper.Axis.Horizontal).forEach {
-                    val offset = it.pointOffset(size, xMinLim, xMaxLim, yMinLim, yMaxLim)
-                    val strVal = String.format("%.2f", it.x)
-                    if (grid) {
-                        drawLine(
-                            dotColor,
-                            Offset(offset.x, -100f),
-                            Offset(offset.x, size.height)
-                        )
-                    }
-                    if (labels) {
-                        drawContext.canvas.nativeCanvas.drawText(
-                            strVal,
-                            offset.x,
-                            size.height - paint.textSize/2,
-                            paint
-                        )
-                    }
-                }
-            }
-            draw=!draw
-            Log.d("CHART","canvas end")
-        }
-    }
+            },
+        color = surfaceColor,
+        elevation = 8.dp
+    ) {
+        Box(
+            modifier
+                .fillMaxSize()
+                .pointerInput(Unit) {
+                    detectTapGestures(onDoubleTap = {   //resize to cover all points
+                        xMaxLim = pointListMapper.pointsList.maxOfOrNull { it.x }
+                            ?: 10f
+                        xMinLim = pointListMapper.pointsList.minOfOrNull { it.x }
+                            ?: 0f
+                        yMinLim = pointListMapper.pointsList.minOfOrNull { it.y }
+                            ?: 0f
+                        yMaxLim = pointListMapper.pointsList.maxOfOrNull { it.y }
+                            ?: 10f
+                    })
+                },
+            contentAlignment = Alignment.Center, true
+        ) {
 
+                Drawing(
+                    points = offsetList,
+                    modifier = Modifier.fillMaxSize(),
+                    xMinLim = xMinLim,
+                    xMaxLim = xMaxLim,
+                    yMinLim = yMinLim,
+                    yMaxLim = yMaxLim,
+                    gridX = grid,
+                    gridY = grid,
+                    pointListMapper = pointListMapper,
+                    textSize = textSize
+                )
+
+        }
     }
 }
 
@@ -248,7 +283,7 @@ fun ChartPreview() {
                 PolygonChart(
                     pointList,
                     modifier = Modifier.size(300.dp),
-                    grid = true, labels = true,30f
+                    grid = true,  30f
                 )
             }
         }

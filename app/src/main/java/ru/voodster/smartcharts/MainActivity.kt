@@ -48,7 +48,7 @@ class MainActivity : ComponentActivity() {
                                     .fillMaxSize()
                                     .padding(10.dp)
                                     .requiredHeightIn(200.dp, 300.dp),
-                                    grid = true, labels = true,40f
+                                    grid = true, 40f
                             )
                         }
                     }

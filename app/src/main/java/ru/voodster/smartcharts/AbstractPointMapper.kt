@@ -6,6 +6,9 @@ import kotlinx.coroutines.async
 
 class AbstractPointMapper(private val xList: Array<Float>, private val yList: Array<Float>) {
 
+    var canvasSize  = Size(10f,10f)
+
+
     enum class Axis {
         Vertical,
         Horizontal
@@ -55,7 +58,6 @@ class AbstractPointMapper(private val xList: Array<Float>, private val yList: Ar
         Point(x = xList[it], y = yList[it])
     }
 
-
     /**
      * Points on canvas - currently showed points on canvas
      * @param xMin
@@ -67,7 +69,7 @@ class AbstractPointMapper(private val xList: Array<Float>, private val yList: Ar
         }
 
     @Composable
-    fun canvasPoints(xMin: Float, xMax: Float,yMin: Float,yMax: Float,redraw:Boolean) =
+    fun canvasPoints(xMin: Float, xMax: Float,yMin: Float,yMax: Float) =
         pointsList.filter {
             (
                     xMax.plus((xMax - xMin).div(10)) > it.x
