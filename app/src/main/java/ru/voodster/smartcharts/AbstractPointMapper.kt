@@ -48,7 +48,16 @@ class AbstractPointMapper(private val xList: Array<Float>, private val yList: Ar
                 xOffset(canvasSize, xMin, xMax),
                 yOffset(canvasSize, yMin, yMax)
             )
+
+        suspend fun asyncPointOffset(canvasSize: Size, xMin: Float, xMax: Float, yMin: Float, yMax: Float) =
+            Offset(
+                xOffset(canvasSize, xMin, xMax),
+                yOffset(canvasSize, yMin, yMax)
+            )
+
     }
+
+
 
     /**
      * Points list

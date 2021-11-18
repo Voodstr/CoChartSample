@@ -41,10 +41,11 @@ import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import ru.voodster.smartcharts.ui.theme.SmartChartsTheme
-import kotlin.math.hypot
 import kotlin.math.roundToInt
 
 @Composable
@@ -56,7 +57,6 @@ fun Drawing(
     textSize:Float
 ) {
     Log.d("Drawing", "Drawing start")
-    val list by remember { mutableStateOf(points) }
     val lineColor = MaterialTheme.colors.onSurface
     val dotColor = MaterialTheme.colors.primaryVariant
     val paint = Paint()
@@ -128,13 +128,13 @@ fun Drawing(
             }
 
             drawPoints(
-                points = list,
+                points = points,
                 pointMode = PointMode.Polygon,
                 lineColor,
                 strokeWidth = 5.0f
             )
             drawPoints(
-                points = list,
+                points = points,
                 pointMode = PointMode.Points,
                 dotColor,
                 strokeWidth = 10.0f
@@ -160,46 +160,34 @@ fun PolygonChart(
     var yMinLim by remember { mutableStateOf(0f) }
     var yMaxLim by remember { mutableStateOf(10f) }
 
+    //TODO need to change this for smth more usefull
+    val _showedList = MutableStateFlow(arrayListOf<Offset>())
+    val showedList = _showedList.asStateFlow()
+    val drawlist = showedList.collectAsState()
 
-    val scope = rememberCoroutineScope()
-    val chunkedList = mutableListOf<Deferred<List<Offset>>>()
+    var redraw by remember { mutableStateOf(false) }
+    val offsetList = ArrayList<Offset>()
 
-
-    val offsetList by remember { mutableStateOf(ArrayList<Offset>()) }
-    LaunchedEffect(key1 = chunkedList) {
-        Log.d("CHART", "LaunchedEffect start")
+    LaunchedEffect(key1 = redraw) {
+        val chunkedList = pointListMapper.pointsOnCanvas(xMinLim, xMaxLim).chunked(100)
+        val futureList = List(size = chunkedList.size) { chunk_ind ->
+            async {
+                List(chunkedList[chunk_ind].size) { point_ind ->
+                    chunkedList[chunk_ind][point_ind].asyncPointOffset(
+                        pointListMapper.canvasSize,
+                        xMinLim,
+                        xMaxLim,
+                        yMinLim,
+                        yMaxLim
+                    )
+                }
+            }
+        }
         offsetList.clear()
-        chunkedList.forEach {
-            Log.d("CHART", "offset add")
-            it.await().forEach { offset ->
-                offsetList.add(offset)
-            }
+        futureList.forEach { def ->
+            def.await().forEach { offset -> offsetList.add(offset) }
         }
-        Log.d("CHART", "LaunchedEffect end")
-    }
-
-    pointListMapper.canvasPoints(xMinLim, xMaxLim, yMinLim, yMaxLim).let { list ->
-        chunkedList.forEach { it.cancel() }
-        chunkedList.clear()
-        list.chunked(100).forEach { chunk ->
-            val first = chunk.first().pointOffset(pointListMapper.canvasSize, xMinLim, xMaxLim, yMinLim, yMaxLim)
-            val last = chunk.last().pointOffset(pointListMapper.canvasSize, xMinLim, xMaxLim, yMinLim, yMaxLim)
-            val dx = last.x - first.x
-            val dy = last.y - first.y
-            val dist = hypot(dx, dy)
-            if (dist > chunk.size / 5) {
-                chunkedList.add(scope.async {
-                    Log.d("CHART", "scope start")
-                    List(chunk.size) {
-                        chunk[it].pointOffset(pointListMapper.canvasSize, xMinLim, xMaxLim, yMinLim, yMaxLim)
-                    }
-                })
-            } else {
-                chunkedList.add(scope.async {
-                    listOf(first, last)
-                })
-            }
-        }
+        _showedList.update { offsetList }
     }
 
     Surface(
@@ -220,6 +208,7 @@ fun PolygonChart(
                         (yPoint + ((yMaxLim - yPoint).div(zoom))) + (pan.y / size.height) * ySize
                     yMinLim =
                         (yPoint - ((yPoint - yMinLim).div(zoom))) + (pan.y / size.height) * ySize
+                    redraw = !redraw
                 }
             },
         color = surfaceColor,
@@ -238,13 +227,14 @@ fun PolygonChart(
                             ?: 0f
                         yMaxLim = pointListMapper.pointsList.maxOfOrNull { it.y }
                             ?: 10f
+                        redraw = !redraw
                     })
                 },
             contentAlignment = Alignment.Center, true
         ) {
 
                 Drawing(
-                    points = offsetList,
+                    points = drawlist.value,
                     modifier = Modifier.fillMaxSize(),
                     xMinLim = xMinLim,
                     xMaxLim = xMaxLim,
