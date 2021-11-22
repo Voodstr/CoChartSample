@@ -20,6 +20,7 @@ package ru.voodster.smartcharts
 
 import android.graphics.Paint
 import android.icu.text.DecimalFormat
+import android.icu.text.SimpleDateFormat
 import android.util.Log
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -42,6 +43,8 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import java.util.*
+import kotlin.collections.ArrayList
 import kotlin.math.roundToInt
 import kotlin.math.roundToLong
 
@@ -180,16 +183,27 @@ fun TimeSeriesChart(modifier: Modifier,
                     }
 
                     if (grid){
-                        val gridList = Array(xLabelsCount+1){""}
-                        gridList[1] = "1231"
-                        val timeLineSize = (xMaxLim - xMinLim).roundToLong()
-                        when(timeLineSize){
-                            in 0..(5*1000)->{}//mills
-                            in (5*1001)..(5*60*1000)->{}//seconds
-                            in (5*60*1000)..(2*60*60*1000)->{}//minutes
-                            in (2*60*60*1000)..(2*24*60*60*1000)->{}//hours
-                            else ->{}//date
+                        val datePattern = when((xMaxLim - xMinLim).roundToLong()){
+                            in 0..(5*1000)->{
+                                "SSSS ms"
+                            }//mills
+                            in (5*1001)..(60*1000)->{
+                                "ss sec"
+                            }//seconds
+                            in (60*1000)..(60*60*1000)->{
+                                "mm min"
+                            }//minutes
+                            in (60*60*1000)..(24*60*60*1000)->{
+                                "HH:mm"
+                            }//hours
+                            in (24*60*60*1000)..(7*24*60*60*1000)->{
+                                "EEE HH:mm"
+                            }// day of week
+                            else ->{
+                                "dd/MM/yyyy"
+                            }//date
                         }
+                        val sdf = SimpleDateFormat(datePattern, Locale.ROOT)
                         pointListMapper.gridList(
                             xLabelsCount,
                             xMinLim,
@@ -197,9 +211,7 @@ fun TimeSeriesChart(modifier: Modifier,
                             PointMapper.Axis.Horizontal
                         ).forEach {
                             val offset = it.pointOffset(size, xMinLim, xMaxLim, yMinLim, yMaxLim)
-                            val dcmf = DecimalFormat()
-                            dcmf.maximumSignificantDigits=4
-                            val strVal = dcmf.format(it.x)
+                            val strVal = sdf.format(it.x.toLong())
                             drawLine(
                                 dotColor,
                                 Offset(offset.x, -100f),
