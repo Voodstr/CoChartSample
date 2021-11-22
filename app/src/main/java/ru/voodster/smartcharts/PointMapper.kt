@@ -1,10 +1,9 @@
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+package ru.voodster.smartcharts
+
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import kotlinx.coroutines.async
 
-class AbstractPointMapper(private val xList: Array<Float>, private val yList: Array<Float>) {
+class PointMapper(private val xList: Array<Float>, private val yList: Array<Float>) {
 
     var canvasSize  = Size(10f,10f)
 
@@ -26,12 +25,12 @@ class AbstractPointMapper(private val xList: Array<Float>, private val yList: Ar
         val x: Float,
         val y: Float
     ) {
-        var pointOffset = Offset(0f, 0f)
+        var pOffset = Offset(0f, 0f)
 
-        fun xOffset(canvasSize: Size, xMin: Float, xMax: Float) =
+        private fun xOffset(canvasSize: Size, xMin: Float, xMax: Float) =
             (x - xMin).div(xMax - xMin).times(canvasSize.width)
 
-        fun yOffset(canvasSize: Size, yMin: Float, yMax: Float) =
+        private fun yOffset(canvasSize: Size, yMin: Float, yMax: Float) =
             (yMax - y).div(yMax - yMin).times(canvasSize.height)
 
         /**
@@ -43,18 +42,13 @@ class AbstractPointMapper(private val xList: Array<Float>, private val yList: Ar
          * @param yMin
          * @param yMax
          */
-        fun pointOffset(canvasSize: Size, xMin: Float, xMax: Float, yMin: Float, yMax: Float) =
-            Offset(
+        fun pointOffset(canvasSize: Size, xMin: Float, xMax: Float, yMin: Float, yMax: Float):Offset{
+           pOffset =  Offset(
                 xOffset(canvasSize, xMin, xMax),
                 yOffset(canvasSize, yMin, yMax)
             )
-
-        suspend fun asyncPointOffset(canvasSize: Size, xMin: Float, xMax: Float, yMin: Float, yMax: Float) =
-            Offset(
-                xOffset(canvasSize, xMin, xMax),
-                yOffset(canvasSize, yMin, yMax)
-            )
-
+            return pOffset
+        }
     }
 
 
@@ -74,17 +68,9 @@ class AbstractPointMapper(private val xList: Array<Float>, private val yList: Ar
      */
     fun pointsOnCanvas(xMin: Float, xMax: Float) =
         pointsList.filter {
-            (xMax.plus((xMax - xMin).div(10)) > it.x && it.x > xMin.minus((xMax - xMin).div(10)))
+            (xMax.plus((xMax - xMin).div(4)) > it.x && it.x > xMin.minus((xMax - xMin).div(4)))
         }
 
-    @Composable
-    fun canvasPoints(xMin: Float, xMax: Float,yMin: Float,yMax: Float) =
-        pointsList.filter {
-            (
-                    xMax.plus((xMax - xMin).div(10)) > it.x
-                            &&
-                    it.x > xMin.minus((xMax - xMin).div(10)))
-        }
 
     /**
      * Grid list
@@ -99,10 +85,10 @@ class AbstractPointMapper(private val xList: Array<Float>, private val yList: Ar
         val labelStep = (max - min) / maxOfLabels
         return when (axis) {
             Axis.Vertical -> {
-                List(maxOfLabels) { Point(0f, labelStep/2+min + it * labelStep) }
+                List(maxOfLabels+1) { Point(0f, min + it * labelStep) }
             }
             Axis.Horizontal -> {
-                List(maxOfLabels) { Point(labelStep/2+min + it * labelStep, 1f) }
+                List(maxOfLabels+1) { Point(min + it * labelStep, 0f) }
             }
         }
     }
