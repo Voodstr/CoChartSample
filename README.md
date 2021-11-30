@@ -1,4 +1,4 @@
-# SmartCharts - Jetpack Compose Charts widget
+# CoChart - Jetpack Compose Charts widget
  
  Currently there's only PolygonChart - charts with line drawn from point to point
  
